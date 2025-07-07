@@ -169,7 +169,7 @@ export function RoutePlanner({ initialPendingOrders, initialAssignedRoutes, deli
           </Button>
         </div>
       </div>
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-[minmax(0,_1fr)_minmax(0,_2fr)] h-[calc(100vh-14rem)]">
+      <div className="flex flex-col lg:grid gap-6 lg:grid-cols-[minmax(0,_1fr)_minmax(0,_2fr)] lg:h-[calc(100vh-14rem)]">
         <div className="flex flex-col gap-4">
             <Card>
                 <CardHeader>
@@ -234,7 +234,7 @@ export function RoutePlanner({ initialPendingOrders, initialAssignedRoutes, deli
                 </ScrollArea>
             </Card>
         </div>
-        <Card className="flex flex-col">
+        <Card className="flex flex-col h-[500px] lg:h-auto">
           <CardHeader>
             <CardTitle>Mapa de Entregas</CardTitle>
           </CardHeader>
