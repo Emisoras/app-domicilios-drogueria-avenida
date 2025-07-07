@@ -5,6 +5,11 @@ import { Toaster } from "@/components/ui/toaster"
 export const metadata: Metadata = {
   title: 'Droguería Avenida - Domicilios',
   description: 'Gestión de domicilios para Droguería Avenida.',
+  icons: {
+    icon: '/icon.png', // Para navegadores modernos y como ícono de Android
+    shortcut: '/favicon.ico', // El favicon clásico para todas las pestañas
+    apple: '/apple-icon.png', // Para cuando se añade a la pantalla de inicio en iPhones y iPads
+  },
 };
 
 export default function RootLayout({
