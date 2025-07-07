@@ -20,11 +20,6 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: 'Droguería Avenida - Domicilios',
   description: 'Gestión de domicilios para Droguería Avenida.',
-  icons: {
-    icon: '/icon.png', // Para navegadores modernos y como ícono de Android
-    shortcut: '/favicon.ico', // El favicon clásico para todas las pestañas
-    apple: '/apple-icon.png', // Para cuando se añade a la pantalla de inicio en iPhones y iPads
-  },
 };
 
 export default function RootLayout({
@@ -34,6 +29,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={`${inter.variable} ${poppins.variable}`}>
+      <head>
+        <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
+        <link rel="icon" href="/icon.png?v=2" type="image/png" />
+        <link rel="apple-touch-icon" href="/apple-icon.png?v=2" />
+      </head>
       <body className="font-body antialiased">
         {children}
         <Toaster />
