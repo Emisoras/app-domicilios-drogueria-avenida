@@ -197,12 +197,12 @@ export function RoutePlanner({ initialPendingOrders, initialAssignedRoutes, deli
                 </CardContent>
             </Card>
 
-            <Card className="flex-1 flex flex-col">
+            <Card className="flex flex-col">
                 <CardHeader>
                     <CardTitle>Rutas Asignadas</CardTitle>
                     <CardDescription>Pedidos en curso agrupados por domiciliario.</CardDescription>
                 </CardHeader>
-                <ScrollArea className="flex-1">
+                <ScrollArea className="h-80">
                     <CardContent>
                          <Accordion type="multiple" className="w-full">
                             {routesForMap.length > 0 ? routesForMap.map(({ deliveryPerson, orders, color }) => (
@@ -234,7 +234,7 @@ export function RoutePlanner({ initialPendingOrders, initialAssignedRoutes, deli
                 </ScrollArea>
             </Card>
         </div>
-        <Card className="flex flex-col h-[500px] lg:h-auto">
+        <Card className="flex flex-col h-96 lg:h-auto">
           <CardHeader>
             <CardTitle>Mapa de Entregas</CardTitle>
           </CardHeader>
