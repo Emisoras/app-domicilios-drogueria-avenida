@@ -17,9 +17,16 @@ const poppins = Poppins({
   variable: '--font-poppins',
 });
 
+// Esta es la forma definitiva y recomendada por Next.js para gestionar los iconos.
+// Asegúrate de que los archivos 'favicon.ico', 'icon.png' y 'apple-icon.png'
+// estén en la carpeta 'public' en la raíz de tu proyecto.
 export const metadata: Metadata = {
   title: 'Droguería Avenida - Domicilios',
   description: 'Gestión de domicilios para Droguería Avenida.',
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-icon.png',
+  },
 };
 
 export default function RootLayout({
@@ -29,11 +36,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={`${inter.variable} ${poppins.variable}`}>
-      <head>
-        <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
-        <link rel="icon" href="/icon.png?v=2" type="image/png" />
-        <link rel="apple-touch-icon" href="/apple-icon.png?v=2" />
-      </head>
+      {/* La etiqueta <head> ahora es gestionada automáticamente por Next.js a través del objeto metadata */}
       <body className="font-body antialiased">
         {children}
         <Toaster />
