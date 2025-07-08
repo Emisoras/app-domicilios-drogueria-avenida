@@ -155,7 +155,7 @@ export function RoutePlanner({ initialPendingOrders, initialAssignedRoutes, deli
     <>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold font-headline">Gestión de Rutas</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold font-headline">Gestión de Rutas</h1>
           <p className="text-muted-foreground">Asigna y optimiza las entregas del día.</p>
         </div>
         <div className="flex gap-2">

@@ -14,7 +14,7 @@ export default async function AgentesPage() {
         <div>
             <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold font-headline">Gestión de Agentes</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold font-headline">Gestión de Agentes</h1>
                     <p className="text-muted-foreground">Administra los usuarios del call center.</p>
                 </div>
             </div>

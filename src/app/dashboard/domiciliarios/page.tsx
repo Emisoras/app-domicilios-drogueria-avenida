@@ -13,7 +13,7 @@ export default async function DomiciliariosPage() {
         <div>
             <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold font-headline">Gestión de Domiciliarios</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold font-headline">Gestión de Domiciliarios</h1>
                     <p className="text-muted-foreground">Administra tu equipo de entrega y asigna rutas.</p>
                 </div>
             </div>

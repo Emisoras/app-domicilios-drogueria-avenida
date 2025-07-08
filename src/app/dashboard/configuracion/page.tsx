@@ -180,7 +180,7 @@ export default function ConfiguracionPage() {
         return (
              <div className="space-y-8">
                 <div>
-                    <h1 className="text-3xl font-bold font-headline">Configuración</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold font-headline">Configuración</h1>
                     <p className="text-muted-foreground">Ajusta las preferencias de tu cuenta y del sistema.</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -200,7 +200,7 @@ export default function ConfiguracionPage() {
         <>
             <div className="flex flex-col gap-8">
                 <div>
-                    <h1 className="text-3xl font-bold font-headline">Configuración</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold font-headline">Configuración</h1>
                     <p className="text-muted-foreground">Ajusta las preferencias de tu cuenta y del sistema.</p>
                 </div>
 
@@ -228,7 +228,7 @@ export default function ConfiguracionPage() {
                                             <CardDescription>Gestiona tu información personal y de contacto.</CardDescription>
                                         </CardHeader>
                                         <CardContent className="space-y-4">
-                                            <div className="flex items-center gap-6">
+                                            <div className="flex flex-col sm:flex-row sm:items-center gap-6">
                                                 <Avatar className="h-24 w-24">
                                                     <AvatarImage src={avatarUrl} alt={currentUser?.name} />
                                                     <AvatarFallback>{userInitials}</AvatarFallback>
