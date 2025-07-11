@@ -75,6 +75,7 @@ export async function loginUser(credentials: { cedula: string, password?: string
             return { success: false, message: 'Cédula o contraseña incorrecta.' };
         }
 
+        console.log(`User ${user.cedula} logging in with role: ${user.role}`);
         await createSession(user.id, user.role);
         return { success: true, user: toPlainObject(user) };
 
