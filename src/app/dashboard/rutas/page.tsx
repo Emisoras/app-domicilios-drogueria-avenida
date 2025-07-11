@@ -23,24 +23,22 @@ const groupOrdersByDeliveryPerson = (orders: Order[]): Record<string, Order[]> =
 
 export default async function RutasPage() {
   // Fetch initial data on the server in parallel for better performance
-  const [allOrders, deliveryPeople, agentUser, clients] = await Promise.all([
+  const session = await getSession();
+  if (!session) {
+    redirect('/');
+  }
+
+  const currentUser = await getUserByCedula(session.userId);
+
+  if (!currentUser) {
+    redirect('/');
+  }
+
+  const [allOrders, deliveryPeople, clients] = await Promise.all([
     getOrders(),
     getUsers('delivery'),
-    getUserByCedula('1091656511'),
     getClients()
   ]);
-
-  if (!agentUser) {
-    // This is a critical error. The admin user should always exist due to the self-healing login.
-    // A proper error page should be shown in a real app.
-    return (
-        <Card>
-            <CardContent className="p-8 text-center text-destructive">
-                Error Crítico: No se pudo encontrar al usuario administrador. La aplicación no puede funcionar.
-            </CardContent>
-        </Card>
-    );
-  }
 
   // Filter and group orders on the server
   const pendingOrders = allOrders
@@ -54,7 +52,7 @@ export default async function RutasPage() {
       initialPendingOrders={pendingOrders}
       initialAssignedRoutes={assignedRoutes}
       deliveryPeople={deliveryPeople}
-      agent={agentUser}
+      agent={currentUser}
       initialClients={clients}
     />
   );
