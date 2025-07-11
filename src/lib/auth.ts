@@ -48,7 +48,7 @@ export async function getSession() {
   return await decrypt(session);
 }
 
-export function updateSession(request: NextRequest) {
+export async function updateSession(request: NextRequest) {
   const session = request.cookies.get('session')?.value;
   if (!session) return;
 

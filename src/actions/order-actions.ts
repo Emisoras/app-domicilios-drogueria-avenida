@@ -253,18 +253,11 @@ export async function getDashboardStats(userId?: string, role?: string) {
             {
                 $match: {
                     ...matchCriteria,
-                $match: {
-                    ...matchCriteria,
-                $match: {
                     status: 'delivered',
                     createdAt: { $gte: todayStart, $lte: todayEnd }
                 }
             },
             {
-                $match: {
-                    ...matchCriteria,
-                $match: {
-                    ...matchCriteria,
                 $group: {
                     _id: null,
                     total: { $sum: '$total' }
@@ -281,32 +274,21 @@ export async function getDashboardStats(userId?: string, role?: string) {
             {
                 $match: {
                     ...matchCriteria,
-                $match: {
-                    ...matchCriteria,
-                $match: {
                     status: 'delivered',
                     createdAt: { $gte: sevenDaysAgo }
                 }
             },
             {
-                $match: {
-                    ...matchCriteria,
-                $match: {
-                    ...matchCriteria,
                 $group: {
                     _id: {
                         year: { $year: "$createdAt" },
                         month: { $month: "$createdAt" },
-                        day: { $dayOfMonth: "$createdAt" },
+                        day: { $dayOfMonth: "$createdAt" }
                     },
                     revenue: { $sum: '$total' }
                 }
             },
             {
-                $match: {
-                    ...matchCriteria,
-                $match: {
-                    ...matchCriteria,
                 $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 }
             }
         ]);
