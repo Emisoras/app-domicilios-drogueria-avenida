@@ -1,7 +1,8 @@
 import { getOrders } from "@/actions/order-actions";
 import { getUsers, getUserByCedula } from "@/actions/user-actions";
+import { getClients } from "@/actions/client-actions";
 import { RoutePlanner } from "./components/route-planner";
-import type { Order, User } from "@/types";
+import type { Order } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 
 // Helper function to group orders by delivery person on the server
@@ -21,13 +22,13 @@ const groupOrdersByDeliveryPerson = (orders: Order[]): Record<string, Order[]> =
 };
 
 export default async function RutasPage() {
-  // Fetch initial data on the server
-  const allOrders = await getOrders();
-  const deliveryPeople = await getUsers('delivery');
-  
-  // In a real app, the logged-in user would come from an auth session.
-  // For now, we'll fetch the main admin user, who is acting as the agent creating orders.
-  const agentUser = await getUserByCedula('1091656511');
+  // Fetch initial data on the server in parallel for better performance
+  const [allOrders, deliveryPeople, agentUser, clients] = await Promise.all([
+    getOrders(),
+    getUsers('delivery'),
+    getUserByCedula('1091656511'),
+    getClients()
+  ]);
 
   if (!agentUser) {
     // This is a critical error. The admin user should always exist due to the self-healing login.
@@ -40,7 +41,6 @@ export default async function RutasPage() {
         </Card>
     );
   }
-
 
   // Filter and group orders on the server
   const pendingOrders = allOrders
@@ -55,6 +55,7 @@ export default async function RutasPage() {
       initialAssignedRoutes={assignedRoutes}
       deliveryPeople={deliveryPeople}
       agent={agentUser}
+      initialClients={clients}
     />
   );
 }
