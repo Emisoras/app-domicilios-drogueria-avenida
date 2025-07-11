@@ -114,9 +114,8 @@ export async function getDeliveredOrdersByDeliveryPerson(userId: string) {
 
 
 const OrderFormSchema = z.object({
-  clientId: z.string().optional(),
-  clientName: z.string().optional(),
-  clientPhone: z.string().optional(),
+  clientName: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres." }),
+  clientPhone: z.string().regex(/^\d{10}$/, { message: "El teléfono debe tener 10 dígitos." }),
   deliveryLocation: z.object({
     address: z.string().min(5, { message: "La dirección es obligatoria." }),
     lat: z.number().optional(),
@@ -131,23 +130,6 @@ const OrderFormSchema = z.object({
   total: z.coerce.number().positive({ message: "El total debe ser un número positivo." }),
   paymentMethod: z.enum(['cash', 'transfer']),
   createdBy: z.string(), // This should be a valid ObjectId string for the User
-}).superRefine((data, ctx) => {
-    if (!data.clientId) {
-        if (!data.clientName || data.clientName.length < 3) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: "El nombre del cliente es requerido para nuevos clientes y debe tener al menos 3 caracteres.",
-                path: ['clientName'],
-            });
-        }
-        if (!data.clientPhone || !/^\d{10}$/.test(data.clientPhone)) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: "El teléfono del cliente es requerido para nuevos clientes y debe tener 10 dígitos.",
-                path: ['clientPhone'],
-            });
-        }
-    }
 });
 
 
@@ -158,36 +140,26 @@ export async function createOrder(formData: z.infer<typeof OrderFormSchema>) {
         return { success: false, message: `Datos de pedido inválidos: ${errorMessages}` };
     }
 
-    const { clientId, clientName, clientPhone, deliveryLocation, items, total, paymentMethod, createdBy } = validatedFields.data;
+    const { clientName, clientPhone, deliveryLocation, items, total, paymentMethod, createdBy } = validatedFields.data;
 
     try {
         await connectDB();
         
-        let client;
+        let client = await ClientModel.findOne({ phone: clientPhone });
 
-        if (clientId) {
-            client = await ClientModel.findById(clientId);
-            if (!client) {
-                return { success: false, message: 'Cliente existente no encontrado.' };
-            }
-        } else if (clientName && clientPhone) {
-            client = await ClientModel.findOne({ phone: clientPhone });
-            if (!client) {
-                client = new ClientModel({
-                    fullName: clientName,
-                    phone: clientPhone,
-                    addresses: [deliveryLocation]
-                });
-                await client.save();
-            } else {
-                const addressExists = client.addresses.some(addr => addr.address === deliveryLocation.address);
-                if (!addressExists) {
-                    client.addresses.push(deliveryLocation);
-                    await client.save();
-                }
-            }
+        if (!client) {
+            client = new ClientModel({
+                fullName: clientName,
+                phone: clientPhone,
+                addresses: [deliveryLocation]
+            });
+            await client.save();
         } else {
-            return { success: false, message: 'Se requiere un cliente existente o el nombre y teléfono de un nuevo cliente.' };
+            const addressExists = client.addresses.some(addr => addr.address === deliveryLocation.address);
+            if (!addressExists) {
+                client.addresses.push(deliveryLocation);
+                await client.save();
+            }
         }
 
         const newOrder = new OrderModel({
