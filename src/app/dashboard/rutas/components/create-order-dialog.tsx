@@ -13,12 +13,14 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from '@/hooks/use-toast';
+import { toast } from "@/components/ui/use-toast";
 import { geocodeAddress } from '@/ai/flows/geocode-address-flow';
 import { reverseGeocode } from '@/ai/flows/reverse-geocode-flow';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { createOrder } from '@/actions/order-actions';
+import { getClients } from '@/actions/client-actions';
+import { Combobox } from '@/components/ui/combobox';
 
 // Dynamically import map component to avoid SSR issues with Leaflet
 const AddressMapPicker = dynamic(() => import('./address-map-picker'), {
@@ -27,14 +29,40 @@ const AddressMapPicker = dynamic(() => import('./address-map-picker'), {
 });
 
 const formSchema = z.object({
-    clientName: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres." }),
-    clientPhone: z.string().regex(/^\d{10}$/, { message: "El teléfono debe tener 10 dígitos." }),
-    clientAddress: z.string().min(5, { message: "La dirección es obligatoria." }),
-    orderDetails: z.string().min(5, { message: "Los detalles del pedido son obligatorios." }),
-    total: z.coerce.number().positive({ message: "El total debe ser un número positivo." }),
-    paymentMethod: z.enum(['cash', 'transfer'], {
-        required_error: "Debes seleccionar un método de pago.",
-    }),
+    deliveryAddress: z.string().min(5, { message: "La dirección de entrega es requerida." }),
+    deliveryLat: z.number().optional(),
+    deliveryLng: z.number().optional(),
+    orderDescription: z.string().min(5, { message: "La descripción del pedido es requerida." }),
+    totalAmount: z.preprocess(
+        (val) => Number(val), 
+        z.number().min(0, { message: "El monto total debe ser un número positivo." })
+    ),
+    paymentMethod: z.enum(["cash", "credit_card", "transfer"], { message: "Método de pago inválido." }),
+}).superRefine((data, ctx) => {
+    if (data.clientType === 'new') {
+        if (!data.clientName || data.clientName.length < 2) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "El nombre del cliente es requerido para nuevos clientes.",
+                path: ['clientName'],
+            });
+        }
+        if (!data.clientPhone || data.clientPhone.length < 7) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "El teléfono del cliente es requerido para nuevos clientes.",
+                path: ['clientPhone'],
+            });
+        }
+    } else if (data.clientType === 'existing') {
+        if (!data.clientId) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Debe seleccionar un cliente existente.",
+                path: ['clientId'],
+            });
+        }
+    }
 });
 
 interface CreateOrderDialogProps {
@@ -46,16 +74,20 @@ interface CreateOrderDialogProps {
 
 const ocanaCenter = { lat: 8.250890339840987, lng: -73.35842108942335 }; // Droguería Avenida
 
+import { Client } from '@/models/client-model';
+
 export function CreateOrderDialog({ open, onOpenChange, onOrderCreated, agent }: CreateOrderDialogProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLocating, setIsLocating] = useState(false);
     const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
     const [location, setLocation] = useState<Location | null>(null);
+    const [clients, setClients] = useState<Client[]>([]);
     const { toast } = useToast();
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
+            clientType: 'new',
             clientName: "",
             clientPhone: "",
             clientAddress: "",
@@ -64,6 +96,24 @@ export function CreateOrderDialog({ open, onOpenChange, onOrderCreated, agent }:
             paymentMethod: "cash",
         },
     });
+
+    React.useEffect(() => {
+        if (open) {
+            const fetchClients = async () => {
+                const response = await getClients();
+                if (response.success && response.data) {
+                    setClients(response.data);
+                } else {
+                    toast({
+                        title: "Error al cargar clientes",
+                        description: response.error || "Hubo un problema al obtener la lista de clientes.",
+                        variant: "destructive",
+                    });
+                }
+            };
+            fetchClients();
+        }
+    }, [open, toast]);
 
     const handleLocateAddress = async () => {
         const address = form.getValues("clientAddress");
@@ -135,15 +185,51 @@ export function CreateOrderDialog({ open, onOpenChange, onOrderCreated, agent }:
             price: values.total
         }];
 
-        const result = await createOrder({
-            clientName: values.clientName,
-            clientPhone: values.clientPhone,
-            deliveryLocation: location,
-            items: items,
-            total: values.total,
-            paymentMethod: values.paymentMethod,
-            createdBy: agent.id
-        });
+        let clientNameToSend: string | undefined;
+        let clientPhoneToSend: string | undefined;
+
+        if (values.clientType === 'existing') {
+            const selectedClient = clients.find(c => c.id === values.clientId);
+            if (selectedClient) {
+                clientNameToSend = selectedClient.fullName;
+                clientPhoneToSend = selectedClient.phone;
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error de Cliente',
+                    description: 'Cliente existente no encontrado.',
+                });
+                setIsSubmitting(false);
+                return;
+            }
+        } else {
+            clientNameToSend = values.clientName;
+            clientPhoneToSend = values.clientPhone;
+        }
+
+        let result;
+        if (values.clientType === 'existing') {
+            result = await createOrder({
+                clientId: values.clientId,
+                deliveryAddress: location.address,
+                deliveryLat: location.lat,
+                deliveryLng: location.lng,
+                orderDescription: values.orderDetails,
+                totalAmount: values.total,
+                paymentMethod: values.paymentMethod
+            });
+        } else {
+            result = await createOrder({
+                clientName: values.clientName,
+                clientPhone: values.clientPhone,
+                deliveryAddress: location.address,
+                deliveryLat: location.lat,
+                deliveryLng: location.lng,
+                orderDescription: values.orderDetails,
+                totalAmount: values.total,
+                paymentMethod: values.paymentMethod
+            });
+        }
 
         if (result.success && result.order) {
             onOrderCreated(result.order);
@@ -184,30 +270,93 @@ export function CreateOrderDialog({ open, onOpenChange, onOrderCreated, agent }:
                              <div className="space-y-4">
                                 <FormField
                                     control={form.control}
-                                    name="clientName"
+                                    name="clientType"
                                     render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Nombre del Cliente</FormLabel>
+                                        <FormItem className="space-y-3">
+                                            <FormLabel>Tipo de Cliente</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="Nombre completo" {...field} />
+                                                <RadioGroup
+                                                    onValueChange={(value) => {
+                                                        field.onChange(value);
+                                                        form.resetField('clientId');
+                                                        form.resetField('clientName');
+                                                        form.resetField('clientPhone');
+                                                    }}
+                                                    defaultValue={field.value}
+                                                    className="flex gap-4"
+                                                >
+                                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                                        <FormControl>
+                                                            <RadioGroupItem value="new" id="new-client" />
+                                                        </FormControl>
+                                                        <FormLabel htmlFor="new-client" className="font-normal cursor-pointer">
+                                                            Nuevo Cliente
+                                                        </FormLabel>
+                                                    </FormItem>
+                                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                                        <FormControl>
+                                                            <RadioGroupItem value="existing" id="existing-client" />
+                                                        </FormControl>
+                                                        <FormLabel htmlFor="existing-client" className="font-normal cursor-pointer">
+                                                            Cliente Existente
+                                                        </FormLabel>
+                                                    </FormItem>
+                                                </RadioGroup>
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}
                                 />
-                                 <FormField
-                                    control={form.control}
-                                    name="clientPhone"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Teléfono</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="3001234567" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+
+                                {form.watch('clientType') === 'existing' ? (
+                                    <FormField
+                                        control={form.control}
+                                        name="clientId"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Seleccionar Cliente</FormLabel>
+                                                <Combobox
+                                                    options={clients.map(client => ({ value: client.id, label: `${client.fullName} (${client.phone})` }))}
+                                                    value={field.value}
+                                                    onValueChange={field.onChange}
+                                                    placeholder="Selecciona un cliente..."
+                                                    emptyMessage="No se encontraron clientes."
+                                                    searchPlaceholder="Buscar cliente..."
+                                                />
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                ) : (
+                                    <>
+                                        <FormField
+                                            control={form.control}
+                                            name="clientName"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Nombre del Cliente</FormLabel>
+                                                    <FormControl>
+                                                        <Input placeholder="Nombre completo" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="clientPhone"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Teléfono</FormLabel>
+                                                    <FormControl>
+                                                        <Input placeholder="3001234567" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </>
+                                )}
                                 <FormField
                                     control={form.control}
                                     name="clientAddress"
