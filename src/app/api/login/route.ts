@@ -1,6 +1,5 @@
 import { loginUser } from '@/actions/user-actions';
 import { NextResponse } from 'next/server';
-import { createSession } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
@@ -8,17 +7,7 @@ export async function POST(request: Request) {
     const result = await loginUser({ cedula, password });
 
     if (result.success) {
-      const { session, expiresAt } = await createSession(result.user.id, result.user.role);
-      console.log('Session created in API route:', session);
-      const response = NextResponse.json({ success: true, user: result.user });
-      response.cookies.set('session', session, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        expires: expiresAt,
-        sameSite: 'lax',
-        path: '/',
-      });
-      return response;
+      return NextResponse.json({ success: true, user: result.user });
     } else {
       return NextResponse.json({ success: false, message: result.message }, { status: 401 });
     }

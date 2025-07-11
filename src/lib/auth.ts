@@ -28,7 +28,14 @@ export async function decrypt(session: string | undefined = '') {
 export async function createSession(userId: string, userRole: string) {
   const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours
   const session = await encrypt({ userId, userRole, expiresAt });
-  return { session, expiresAt };
+
+  cookies().set('session', session, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    expires: expiresAt,
+    sameSite: 'lax',
+    path: '/',
+  });
 }
 
 export async function deleteSession() {
@@ -41,15 +48,13 @@ export async function getSession() {
   return await decrypt(session);
 }
 
-export async function updateSession(request: NextRequest) {
+export function updateSession(request: NextRequest) {
   const session = request.cookies.get('session')?.value;
+  if (!session) return;
+
   // Refresh the session expiry
   const parsed = await decrypt(session);
-  console.log('Session parsed in updateSession:', parsed);
-
-  if (!session || !parsed) {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
+  if (!parsed) return;
 
   const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours
   const res = NextResponse.next();
@@ -61,8 +66,4 @@ export async function updateSession(request: NextRequest) {
     path: '/',
   });
   return res;
-
-  // If no session or invalid session, redirect to login
-  // This part is now handled by the `if (!session || !parsed)` block above
-  // return NextResponse.redirect(new URL('/', request.url));
 }

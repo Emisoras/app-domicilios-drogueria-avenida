@@ -14,7 +14,6 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   }
 
   const currentUser = await getUserByCedula(session.userId);
-  console.log('Current user in DashboardLayout:', currentUser);
 
   if (!currentUser) {
     redirect('/');
