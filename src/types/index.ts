@@ -4,7 +4,6 @@ export type DeliveryStatus = 'available' | 'in_route' | 'offline';
 export interface User {
   id: string;
   name: string;
-  role: Role;
   cedula: string;
   phone: string;
   avatarUrl?: string;

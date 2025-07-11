@@ -8,22 +8,22 @@ import { PanelLeft, LayoutDashboard, Bike, Users, Map, ClipboardList, Settings, 
 import { Logo } from "../icons/logo"
 import { Input } from "../ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
-import type { User, Role } from "@/types"
+import type { User } from "@/types"
 
-const navLinks: { href: string; icon: React.ElementType; label: string; roles: Role[] }[] = [
-    { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin', 'agent', 'delivery'] },
-    { href: '/dashboard/pedidos', icon: ClipboardList, label: 'Pedidos', roles: ['admin', 'agent'] },
-    { href: '/dashboard/clientes', icon: Users, label: 'Clientes', roles: ['admin', 'agent'] },
-    { href: '/dashboard/agentes', icon: Headset, label: 'Agentes', roles: ['admin'] },
-    { href: '/dashboard/domiciliarios', icon: Bike, label: 'Domiciliarios', roles: ['admin', 'agent'] },
-    { href: '/dashboard/rutas', icon: Map, label: 'Rutas', roles: ['admin', 'agent'] },
-    { href: '/dashboard/mis-rutas', icon: ListOrdered, label: 'Mis Rutas', roles: ['delivery'] },
-    { href: '/dashboard/cuadre-caja', icon: Calculator, label: 'Cuadre de Caja', roles: ['admin', 'agent', 'delivery'] },
-    { href: '/dashboard/configuracion', icon: Settings, label: 'Configuración', roles: ['admin', 'agent', 'delivery'] },
+const navLinks: { href: string; icon: React.ElementType; label: string; }[] = [
+    { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/dashboard/pedidos', icon: ClipboardList, label: 'Pedidos' },
+    { href: '/dashboard/clientes', icon: Users, label: 'Clientes' },
+    { href: '/dashboard/agentes', icon: Headset, label: 'Agentes' },
+    { href: '/dashboard/domiciliarios', icon: Bike, label: 'Domiciliarios' },
+    { href: '/dashboard/rutas', icon: Map, label: 'Rutas' },
+    { href: '/dashboard/mis-rutas', icon: ListOrdered, label: 'Mis Rutas' },
+    { href: '/dashboard/cuadre-caja', icon: Calculator, label: 'Cuadre de Caja' },
+    { href: '/dashboard/configuracion', icon: Settings, label: 'Configuración' },
 ];
 
 export function Header({ user }: { user: User }) {
-    const accessibleNavLinks = navLinks.filter(link => link.roles.includes(user.role));
+    const accessibleNavLinks = navLinks;
     const userInitials = user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
     return (

@@ -15,9 +15,9 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { User, Role } from "@/types";
+import type { User } from "@/types";
 import { MoreHorizontal, Shield, Loader2 } from "lucide-react";
-import { ChangeRoleDialog } from "./components/change-role-dialog";
+
 import { EditAgentDialog } from '../agentes/components/edit-agent-dialog';
 import { EditDeliveryPersonDialog } from '../domiciliarios/components/edit-delivery-person-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -27,11 +27,7 @@ import type { PharmacySettings } from '@/models/pharmacy-settings-model';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-const roleConfig: Record<Role, { text: string, variant: BadgeProps['variant'] }> = {
-    admin: { text: "Admin", variant: 'destructive' },
-    agent: { text: "Agente", variant: 'secondary' },
-    delivery: { text: "Domiciliario", variant: 'outline' },
-};
+
 
 const profileFormSchema = z.object({
     name: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres." }),
@@ -53,7 +49,8 @@ export default function ConfiguracionPage() {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [pharmacySettings, setPharmacySettings] = useState<PharmacySettings | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [selectedUserForRoleChange, setSelectedUserForRoleChange] = useState<User | null>(null);
+
+
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const { toast } = useToast();
     
@@ -114,22 +111,8 @@ export default function ConfiguracionPage() {
         }
     }, [pharmacySettings, pharmacyForm]);
 
-    const handleRoleChanged = async (userId: string, newRole: Role) => {
-        const result = await updateUser(userId, { role: newRole });
-        if (result.success && result.user) {
-            setUsers(currentUsers =>
-                currentUsers.map(user =>
-                    user.id === userId ? result.user! : user
-                )
-            );
-            toast({
-                title: "Rol Actualizado",
-                description: `El rol de ${result.user.name} ha sido cambiado.`,
-            });
-        } else {
-            toast({ variant: 'destructive', title: 'Error', description: result.message });
-        }
-    };
+
+
 
     const handleUserUpdated = (updatedUser: User) => {
         setUsers(currentUsers =>
@@ -172,9 +155,8 @@ export default function ConfiguracionPage() {
         }
     };
 
-    const openChangeRoleDialog = (user: User) => {
-        setSelectedUserForRoleChange(user);
-    };
+
+
 
     if (isLoading) {
         return (
@@ -443,7 +425,8 @@ export default function ConfiguracionPage() {
                                                                     <DropdownMenuItem onSelect={() => setEditingUser(user)}>
                                                                         Editar Usuario
                                                                     </DropdownMenuItem>
-                                                                    <DropdownMenuItem onSelect={() => openChangeRoleDialog(user)}>Cambiar Rol</DropdownMenuItem>
+
+
                                                                     <DropdownMenuItem className="text-destructive" disabled>Suspender</DropdownMenuItem>
                                                                 </DropdownMenuContent>
                                                             </DropdownMenu>
@@ -478,12 +461,8 @@ export default function ConfiguracionPage() {
                 </Tabs>
             </div>
 
-            <ChangeRoleDialog
-                open={!!selectedUserForRoleChange}
-                onOpenChange={(open) => !open && setSelectedUserForRoleChange(null)}
-                user={selectedUserForRoleChange}
-                onRoleChanged={handleRoleChanged}
-            />
+
+
 
             <EditAgentDialog
                 open={!!(editingUser && editingUser.role === 'agent')}

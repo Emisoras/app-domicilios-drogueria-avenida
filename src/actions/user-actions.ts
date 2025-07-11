@@ -4,7 +4,7 @@ import connectDB from '@/lib/mongoose';
 import UserModel, { UserDocument } from '@/models/user-model';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import type { Role } from '@/types';
+
 import bcrypt from 'bcryptjs';
 
 // Schema for creating a user (password is required)
@@ -22,7 +22,7 @@ const UserUpdateSchema = z.object({
     cedula: z.string().min(5, { message: "La cédula debe tener al menos 5 caracteres." }).optional(),
     avatarUrl: z.string().url({ message: "Por favor, ingresa una URL de imagen válida." }).optional().or(z.literal('')),
     password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }).optional().or(z.literal('')),
-    role: z.enum(['admin', 'agent', 'delivery']).optional(),
+
 });
 
 
@@ -53,7 +53,6 @@ export async function loginUser(credentials: { cedula: string, password?: string
                 phone: '3156765529',
                 cedula: adminCedula,
                 password: hashedPassword,
-                role: 'admin',
             });
             await adminUser.save();
         }
@@ -83,16 +82,7 @@ export async function loginUser(credentials: { cedula: string, password?: string
 }
 
 
-export async function getUsers(role: Role) {
-  try {
-    await connectDB();
-    const users = await UserModel.find({ role }).sort({ createdAt: -1 });
-    return users.map(toPlainObject);
-  } catch (error) {
-    console.error(`Error fetching users with role ${role}:`, error);
-    throw new Error('Failed to fetch users.');
-  }
-}
+
 
 export async function getAllUsers() {
   try {
@@ -118,7 +108,7 @@ export async function getUserByCedula(cedula: string) {
 }
 
 
-export async function createUser(formData: z.infer<typeof UserCreateSchema>, role: Role) {
+export async function createUser(formData: z.infer<typeof UserCreateSchema>) {
     const validatedFields = UserCreateSchema.safeParse(formData);
     if (!validatedFields.success) {
         return { success: false, message: 'Datos inválidos. Por favor, revisa el formulario.' };
@@ -140,15 +130,12 @@ export async function createUser(formData: z.infer<typeof UserCreateSchema>, rol
             name,
             phone,
             cedula,
-            role,
             password: hashedPassword,
-            status: role === 'delivery' ? 'offline' : undefined,
         });
 
         await newUser.save();
         
-        if(role === 'agent') revalidatePath('/dashboard/agentes');
-        if(role === 'delivery') revalidatePath('/dashboard/domiciliarios');
+
         
         return { success: true, message: `Usuario ${name} creado exitosamente.` };
 
@@ -185,8 +172,6 @@ export async function updateUser(id: string, formData: z.infer<typeof UserUpdate
         const plainUser = toPlainObject(user);
 
         // Revalidate all paths where users might appear
-        revalidatePath('/dashboard/agentes');
-        revalidatePath('/dashboard/domiciliarios');
         revalidatePath('/dashboard/configuracion');
 
         return { success: true, message: 'Usuario actualizado exitosamente.', user: plainUser };

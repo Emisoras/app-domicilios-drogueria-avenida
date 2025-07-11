@@ -4,10 +4,10 @@ import type { User } from '@/types';
 import { DeliveryPeopleList } from "./components/delivery-people-list";
 
 // En un futuro, este usuario vendrá de la sesión.
-const currentUser: User = { id: 'admin_camilo_toro', name: 'Camilo Toro', role: 'admin', cedula: '1091656511', phone: '3156765529'};
+const currentUser: User = { id: 'admin_camilo_toro', name: 'Camilo Toro', cedula: '1091656511', phone: '3156765529'};
 
 export default async function DomiciliariosPage() {
-    const deliveryPeople = await getUsers('delivery');
+    const deliveryPeople = await getUsers();
 
     return (
         <div>

@@ -6,7 +6,7 @@ export interface UserDocument extends Omit<UserType, 'id'>, Document {}
 
 const UserSchema: Schema<UserDocument> = new Schema({
     name: { type: String, required: true },
-    role: { type: String, required: true, enum: ['admin', 'agent', 'delivery'] },
+
     cedula: { type: String, required: true, unique: true },
     phone: { type: String, required: true },
     avatarUrl: { type: String },

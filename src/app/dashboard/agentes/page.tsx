@@ -4,11 +4,11 @@ import type { User } from '@/types';
 import { AgentsList } from "./components/agents-list";
 
 // In a real app, this user would come from context or auth.
-const currentUser: User = { id: 'admin_camilo_toro', name: 'Camilo Toro', role: 'admin', cedula: '1091656511', phone: '3156765529'};
+const currentUser: User = { id: 'admin_camilo_toro', name: 'Camilo Toro', cedula: '1091656511', phone: '3156765529'};
 
 export default async function AgentesPage() {
     // Fetch agents from the database on the server
-    const agents = await getUsers('agent');
+    const agents = await getUsers();
 
     return (
         <div>
