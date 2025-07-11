@@ -9,6 +9,7 @@ export async function POST(request: Request) {
 
     if (result.success) {
       const { session, expiresAt } = await createSession(result.user.id, result.user.role);
+      console.log('Session created in API route:', session);
       const response = NextResponse.json({ success: true, user: result.user });
       response.cookies.set('session', session, {
         httpOnly: true,

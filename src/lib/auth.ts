@@ -45,6 +45,7 @@ export async function updateSession(request: NextRequest) {
   const session = request.cookies.get('session')?.value;
   // Refresh the session expiry
   const parsed = await decrypt(session);
+  console.log('Session parsed in updateSession:', parsed);
 
   if (!session || !parsed) {
     return NextResponse.redirect(new URL('/', request.url));
