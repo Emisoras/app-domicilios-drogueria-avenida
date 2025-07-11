@@ -40,7 +40,7 @@ export default function LoginPage() {
           <div className="mx-auto mb-4">
             <Logo className="h-12 w-12 text-primary" />
           </div>
-          <CardTitle className="font-headline text-2xl">Droguería</CardTitle>
+          <CardTitle className="font-headline text-2xl">Droguería Prueba</CardTitle>
           <CardDescription>Ingresa a la plataforma de domicilios</CardDescription>
         </CardHeader>
         <CardContent>
