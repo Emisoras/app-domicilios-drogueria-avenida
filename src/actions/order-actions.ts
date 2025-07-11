@@ -226,7 +226,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus, as
     }
 }
 
-export async function getDashboardStats(userId?: string, role?: string) {
+export async function getDashboardStats() {
     try {
         await connectDB();
 
@@ -234,37 +234,22 @@ export async function getDashboardStats(userId?: string, role?: string) {
         const todayEnd = endOfDay(new Date());
         const sevenDaysAgo = startOfDay(subDays(new Date(), 6));
 
-        const matchCriteria: any = {};
-        if (role === 'delivery' && userId) {
-            matchCriteria.assignedTo = userId;
-        }
-
         const dailyOrdersCount = await OrderModel.countDocuments({
-            ...matchCriteria,
             createdAt: { $gte: todayStart, $lte: todayEnd }
         });
 
         const pendingDeliveriesCount = await OrderModel.countDocuments({
-            ...matchCriteria,
             status: { $in: ['in_transit', 'assigned'] }
         });
 
         const dailyRevenueResult = await OrderModel.aggregate([
             {
                 $match: {
-                    ...matchCriteria,
-                $match: {
-                    ...matchCriteria,
-                $match: {
                     status: 'delivered',
                     createdAt: { $gte: todayStart, $lte: todayEnd }
                 }
             },
             {
-                $match: {
-                    ...matchCriteria,
-                $match: {
-                    ...matchCriteria,
                 $group: {
                     _id: null,
                     total: { $sum: '$total' }
@@ -273,26 +258,17 @@ export async function getDashboardStats(userId?: string, role?: string) {
         ]);
         const dailyRevenue = dailyRevenueResult.length > 0 ? dailyRevenueResult[0].total : 0;
 
-        const recentOrders = role === 'delivery' && userId
-            ? (await getOrdersByDeliveryPerson(userId)).slice(0, 5)
-            : (await getOrders()).slice(0, 5);
+        const allOrders = await getOrders();
+        const recentOrders = allOrders.slice(0, 5);
         
         const weeklyRevenueResult = await OrderModel.aggregate([
             {
-                $match: {
-                    ...matchCriteria,
-                $match: {
-                    ...matchCriteria,
                 $match: {
                     status: 'delivered',
                     createdAt: { $gte: sevenDaysAgo }
                 }
             },
             {
-                $match: {
-                    ...matchCriteria,
-                $match: {
-                    ...matchCriteria,
                 $group: {
                     _id: {
                         year: { $year: "$createdAt" },
@@ -303,10 +279,6 @@ export async function getDashboardStats(userId?: string, role?: string) {
                 }
             },
             {
-                $match: {
-                    ...matchCriteria,
-                $match: {
-                    ...matchCriteria,
                 $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 }
             }
         ]);

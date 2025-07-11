@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/icons/logo';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
-// import { loginUser } from '@/actions/user-actions'; // No longer needed as we'll use API route
+import { loginUser } from '@/actions/user-actions';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,15 +23,7 @@ export default function LoginPage() {
     setError(null);
     setIsLoading(true);
 
-    const response = await fetch('/api/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ cedula, password }),
-    });
-
-    const result = await response.json();
+    const result = await loginUser({ cedula, password });
 
     if (result.success) {
         router.push('/dashboard');

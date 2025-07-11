@@ -1,9 +1,7 @@
 import { getOrders } from "@/actions/order-actions";
 import { getUsers, getUserByCedula } from "@/actions/user-actions";
-import { getClients } from "@/actions/client-actions";
 import { RoutePlanner } from "./components/route-planner";
-import type { Order } from "@/types";
-import { Card, CardContent } from "@/components/ui/card";
+import type { Order, User } from "@/types";
 
 // Helper function to group orders by delivery person on the server
 const groupOrdersByDeliveryPerson = (orders: Order[]): Record<string, Order[]> => {
@@ -22,23 +20,14 @@ const groupOrdersByDeliveryPerson = (orders: Order[]): Record<string, Order[]> =
 };
 
 export default async function RutasPage() {
-  // Fetch initial data on the server in parallel for better performance
-  const session = await getSession();
-  if (!session) {
-    redirect('/');
-  }
+  // Fetch initial data on the server
+  const allOrders = await getOrders();
+  const deliveryPeople = await getUsers('delivery');
+  
+  // Try to get a real agent user, otherwise fallback to a mock one.
+  // In a real app, the logged-in user would come from an auth session.
+  const agentUser = await getUserByCedula('123456') || { id: 'agent01', name: 'Carlos Rivas', role: 'agent', cedula: '123456', phone: '3001112233'};
 
-  const currentUser = await getUserByCedula(session.userId);
-
-  if (!currentUser) {
-    redirect('/');
-  }
-
-  const [allOrders, deliveryPeople, clients] = await Promise.all([
-    getOrders(),
-    getUsers('delivery'),
-    getClients()
-  ]);
 
   // Filter and group orders on the server
   const pendingOrders = allOrders
@@ -52,8 +41,7 @@ export default async function RutasPage() {
       initialPendingOrders={pendingOrders}
       initialAssignedRoutes={assignedRoutes}
       deliveryPeople={deliveryPeople}
-      agent={currentUser}
-      initialClients={clients}
+      agent={agentUser}
     />
   );
 }

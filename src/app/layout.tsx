@@ -1,22 +1,17 @@
 import type {Metadata} from 'next';
 import './globals.css';
-import { Toaster } from "@/components/ui/toaster";
-import { updateSession } from '@/lib/auth';
-import { NextRequest } from 'next/server';
+import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
   title: 'Droguería Avenida - Domicilios',
   description: 'Gestión de domicilios para Droguería Avenida.',
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const request = new NextRequest(new Request('http://localhost')); // Dummy request for updateSession
-  await updateSession(request);
-
   return (
     <html lang="es">
       <head>
