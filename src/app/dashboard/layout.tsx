@@ -18,9 +18,6 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   if (!currentUser) {
     redirect('/');
   }
-
-
-export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen w-full bg-muted/40">
       <Sidebar user={currentUser} />
