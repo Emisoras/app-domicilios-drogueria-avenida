@@ -8,8 +8,16 @@ export async function POST(request: Request) {
     const result = await loginUser({ cedula, password });
 
     if (result.success) {
-      await createSession(result.user.id, result.user.role);
-      return NextResponse.json({ success: true, user: result.user });
+      const { session, expiresAt } = await createSession(result.user.id, result.user.role);
+      const response = NextResponse.json({ success: true, user: result.user });
+      response.cookies.set('session', session, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        expires: expiresAt,
+        sameSite: 'lax',
+        path: '/',
+      });
+      return response;
     } else {
       return NextResponse.json({ success: false, message: result.message }, { status: 401 });
     }
