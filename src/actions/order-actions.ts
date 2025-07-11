@@ -188,7 +188,7 @@ export async function createOrder(formData: z.infer<typeof OrderFormSchema>) {
 
     } catch (error: any) {
         console.error('Error creating order:', error);
-        return { success: false, message: 'No se pudo crear el pedido.' };
+        return { success: false, message: `No se pudo crear el pedido: ${error.message}` };
     }
 }
 
