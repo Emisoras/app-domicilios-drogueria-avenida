@@ -7,6 +7,9 @@ import Link from "next/link";
 import { getDashboardStats } from "@/actions/order-actions";
 import { WeeklyRevenueChart } from "./components/weekly-revenue-chart";
 import type { OrderStatus } from "@/types";
+import { getSession } from '@/lib/auth';
+import { getUserByCedula } from '@/actions/user-actions';
+import { redirect } from 'next/navigation';
 
 
 const getStatusBadge = (status: OrderStatus) => {
@@ -21,6 +24,17 @@ const getStatusBadge = (status: OrderStatus) => {
 };
 
 export default async function DashboardPage() {
+  const session = await getSession();
+  if (!session) {
+    redirect('/');
+  }
+
+  const currentUser = await getUserByCedula(session.userId);
+
+  if (!currentUser) {
+    redirect('/');
+  }
+
   const stats = await getDashboardStats();
 
   return (
