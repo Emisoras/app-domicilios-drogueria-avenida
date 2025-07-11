@@ -21,7 +21,7 @@ const poppins = Poppins({
 // Asegúrate de que los archivos 'favicon.ico', 'icon.png' y 'apple-icon.png'
 // estén en la carpeta 'public' en la raíz de tu proyecto.
 export const metadata: Metadata = {
-  title: 'Droguería Avenida - Domicilios',
+  title: 'Droguería - Domicilios',
   description: 'Gestión de domicilios para Droguería Avenida.',
   icons: {
     icon: '/favicon.ico',
