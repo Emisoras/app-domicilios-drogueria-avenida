@@ -2,6 +2,7 @@ import { getOrders } from "@/actions/order-actions";
 import { getUsers, getUserByCedula } from "@/actions/user-actions";
 import { RoutePlanner } from "./components/route-planner";
 import type { Order, User } from "@/types";
+import { Card, CardContent } from "@/components/ui/card";
 
 // Helper function to group orders by delivery person on the server
 const groupOrdersByDeliveryPerson = (orders: Order[]): Record<string, Order[]> => {
@@ -24,9 +25,21 @@ export default async function RutasPage() {
   const allOrders = await getOrders();
   const deliveryPeople = await getUsers('delivery');
   
-  // Try to get a real agent user, otherwise fallback to a mock one.
   // In a real app, the logged-in user would come from an auth session.
-  const agentUser = await getUserByCedula('123456') || { id: 'agent01', name: 'Carlos Rivas', role: 'agent', cedula: '123456', phone: '3001112233'};
+  // For now, we'll fetch the main admin user, who is acting as the agent creating orders.
+  const agentUser = await getUserByCedula('1091656511');
+
+  if (!agentUser) {
+    // This is a critical error. The admin user should always exist due to the self-healing login.
+    // A proper error page should be shown in a real app.
+    return (
+        <Card>
+            <CardContent className="p-8 text-center text-destructive">
+                Error Crítico: No se pudo encontrar al usuario administrador. La aplicación no puede funcionar.
+            </CardContent>
+        </Card>
+    );
+  }
 
 
   // Filter and group orders on the server
