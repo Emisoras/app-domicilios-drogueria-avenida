@@ -1,42 +1,23 @@
 import type { ReactNode } from 'react';
 import { Sidebar } from '@/components/dashboard/sidebar';
 import { Header } from '@/components/dashboard/header';
+import { getSession } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+import { getUserByCedula } from '@/actions/user-actions';
 import type { User } from '@/types';
+import { ReactNode } from 'react';
 
-// Mock users with different roles
-const mockAdminUser: User = { 
-  id: 'admin_camilo_toro', 
-  name: 'Camilo Toro', 
-  role: 'admin', 
-  cedula: '1091656511', 
-  phone: '3156765529'
-};
+export default async function DashboardLayout({ children }: { children: ReactNode }) {
+  const session = await getSession();
+  if (!session) {
+    redirect('/');
+  }
 
-const mockAgentUser: User = { 
-  id: 'agent01', 
-  name: 'Carlos Rivas', 
-  role: 'agent', 
-  cedula: '123456', 
-  phone: '3001112233'
-};
+  const currentUser = await getUserByCedula(session.userId);
 
-const mockDeliveryUser: User = {
-  id: 'delivery01',
-  name: 'Miguel Torres',
-  role: 'delivery',
-  cedula: '789012',
-  phone: '3012345678'
-};
-
-// --- PARA PROBAR PERFILES ---
-// Para ver la vista de Agente, usa esta línea:
-// const currentUser = mockAgentUser;
-
-// Para ver la vista de Domiciliario, usa esta línea:
-// const currentUser = mockDeliveryUser;
-
-// Para ver la vista de Admin, usa esta línea:
-const currentUser = mockAdminUser;
+  if (!currentUser) {
+    redirect('/');
+  }
 
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {

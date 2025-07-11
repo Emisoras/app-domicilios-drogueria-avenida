@@ -71,8 +71,11 @@ export function Header({ user }: { user: User }) {
               </DropdownMenuItem>
               <DropdownMenuItem>Soporte</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/">Cerrar Sesión</Link>
+              <DropdownMenuItem onClick={async () => {
+                await fetch('/api/logout', { method: 'POST' });
+                window.location.href = '/';
+              }}>
+                Cerrar Sesión
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

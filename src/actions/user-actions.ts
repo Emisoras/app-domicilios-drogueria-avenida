@@ -4,6 +4,7 @@ import connectDB from '@/lib/mongoose';
 import UserModel, { UserDocument } from '@/models/user-model';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { createSession } from '@/lib/auth';
 import type { Role } from '@/types';
 import bcrypt from 'bcryptjs';
 
@@ -74,6 +75,7 @@ export async function loginUser(credentials: { cedula: string, password?: string
             return { success: false, message: 'Cédula o contraseña incorrecta.' };
         }
 
+        await createSession(user.id, user.role);
         return { success: true, user: toPlainObject(user) };
 
     } catch (error) {
