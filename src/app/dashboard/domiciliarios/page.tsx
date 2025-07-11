@@ -4,16 +4,16 @@ import type { User } from '@/types';
 import { DeliveryPeopleList } from "./components/delivery-people-list";
 
 // En un futuro, este usuario vendrá de la sesión.
-const currentUser: User = { id: 'admin_camilo_toro', name: 'Camilo Toro', cedula: '1091656511', phone: '3156765529'};
+const currentUser: User = { id: 'admin_camilo_toro', name: 'Camilo Toro', role: 'admin', cedula: '1091656511', phone: '3156765529'};
 
 export default async function DomiciliariosPage() {
-    const deliveryPeople = await getUsers();
+    const deliveryPeople = await getUsers('delivery');
 
     return (
         <div>
             <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold font-headline">Gestión de Domiciliarios</h1>
+                    <h1 className="text-3xl font-bold font-headline">Gestión de Domiciliarios</h1>
                     <p className="text-muted-foreground">Administra tu equipo de entrega y asigna rutas.</p>
                 </div>
             </div>

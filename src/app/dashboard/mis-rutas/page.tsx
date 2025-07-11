@@ -23,7 +23,7 @@ export default async function MisRutasPage() {
     return (
         <div>
             <div className="mb-8">
-                <h1 className="text-2xl sm:text-3xl font-bold font-headline">Mis Rutas Asignadas</h1>
+                <h1 className="text-3xl font-bold font-headline">Mis Rutas Asignadas</h1>
                 <p className="text-muted-foreground">Aquí puedes ver los detalles de los pedidos que debes entregar hoy.</p>
             </div>
             <AssignedRoutesList initialOrders={orders} />

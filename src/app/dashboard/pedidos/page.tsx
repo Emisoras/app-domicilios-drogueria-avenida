@@ -10,7 +10,7 @@ export default async function PedidosPage() {
     return (
         <div>
             <div className="mb-8">
-                <h1 className="text-2xl sm:text-3xl font-bold font-headline">Gestión de Pedidos</h1>
+                <h1 className="text-3xl font-bold font-headline">Gestión de Pedidos</h1>
                 <p className="text-muted-foreground">Visualiza y gestiona todos los pedidos de la plataforma.</p>
             </div>
             <Card>

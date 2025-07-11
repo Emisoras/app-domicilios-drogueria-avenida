@@ -16,7 +16,7 @@ export default async function ClientesPage() {
         <div>
             <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold font-headline">Gestión de Clientes</h1>
+                    <h1 className="text-3xl font-bold font-headline">Gestión de Clientes</h1>
                     <p className="text-muted-foreground">Administra la información y el historial de tus clientes.</p>
                 </div>
                 {/* The button to open the dialog is now inside ClientsList */}

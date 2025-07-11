@@ -2,22 +2,22 @@ import Link from 'next/link';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Logo } from '@/components/icons/logo';
 import { LayoutDashboard, Bike, Users, Map, ClipboardList, LogOut, Settings, ListOrdered, Calculator, Headset } from 'lucide-react';
-import type { User } from '@/types';
+import type { User, Role } from '@/types';
 
-const navItems: { href: string; icon: React.ElementType; label: string; }[] = [
-  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/dashboard/pedidos', icon: ClipboardList, label: 'Pedidos' },
-  { href: '/dashboard/clientes', icon: Users, label: 'Clientes' },
-  { href: '/dashboard/agentes', icon: Headset, label: 'Agentes' },
-  { href: '/dashboard/domiciliarios', icon: Bike, label: 'Domiciliarios' },
-  { href: '/dashboard/rutas', icon: Map, label: 'Rutas' },
-  { href: '/dashboard/mis-rutas', icon: ListOrdered, label: 'Mis Rutas' },
-  { href: '/dashboard/cuadre-caja', icon: Calculator, label: 'Cuadre de Caja' },
-  { href: '/dashboard/configuracion', icon: Settings, label: 'Configuración' },
+const navItems: { href: string; icon: React.ElementType; label: string; roles: Role[] }[] = [
+  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin', 'agent', 'delivery'] },
+  { href: '/dashboard/pedidos', icon: ClipboardList, label: 'Pedidos', roles: ['admin', 'agent'] },
+  { href: '/dashboard/clientes', icon: Users, label: 'Clientes', roles: ['admin', 'agent'] },
+  { href: '/dashboard/agentes', icon: Headset, label: 'Agentes', roles: ['admin'] },
+  { href: '/dashboard/domiciliarios', icon: Bike, label: 'Domiciliarios', roles: ['admin', 'agent'] },
+  { href: '/dashboard/rutas', icon: Map, label: 'Rutas', roles: ['admin', 'agent'] },
+  { href: '/dashboard/mis-rutas', icon: ListOrdered, label: 'Mis Rutas', roles: ['delivery'] },
+  { href: '/dashboard/cuadre-caja', icon: Calculator, label: 'Cuadre de Caja', roles: ['admin', 'agent', 'delivery'] },
+  { href: '/dashboard/configuracion', icon: Settings, label: 'Configuración', roles: ['admin', 'agent', 'delivery'] },
 ];
 
 export function Sidebar({ user }: { user: User }) {
-  const accessibleNavItems = navItems;
+  const accessibleNavItems = navItems.filter(item => item.roles.includes(user.role));
 
   return (
     <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">

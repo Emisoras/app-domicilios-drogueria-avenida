@@ -15,9 +15,9 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { User } from "@/types";
+import type { User, Role } from "@/types";
 import { MoreHorizontal, Shield, Loader2 } from "lucide-react";
-
+import { ChangeRoleDialog } from "./components/change-role-dialog";
 import { EditAgentDialog } from '../agentes/components/edit-agent-dialog';
 import { EditDeliveryPersonDialog } from '../domiciliarios/components/edit-delivery-person-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -27,7 +27,11 @@ import type { PharmacySettings } from '@/models/pharmacy-settings-model';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-
+const roleConfig: Record<Role, { text: string, variant: BadgeProps['variant'] }> = {
+    admin: { text: "Admin", variant: 'destructive' },
+    agent: { text: "Agente", variant: 'secondary' },
+    delivery: { text: "Domiciliario", variant: 'outline' },
+};
 
 const profileFormSchema = z.object({
     name: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres." }),
@@ -49,8 +53,7 @@ export default function ConfiguracionPage() {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [pharmacySettings, setPharmacySettings] = useState<PharmacySettings | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-
-
+    const [selectedUserForRoleChange, setSelectedUserForRoleChange] = useState<User | null>(null);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const { toast } = useToast();
     
@@ -111,8 +114,22 @@ export default function ConfiguracionPage() {
         }
     }, [pharmacySettings, pharmacyForm]);
 
-
-
+    const handleRoleChanged = async (userId: string, newRole: Role) => {
+        const result = await updateUser(userId, { role: newRole });
+        if (result.success && result.user) {
+            setUsers(currentUsers =>
+                currentUsers.map(user =>
+                    user.id === userId ? result.user! : user
+                )
+            );
+            toast({
+                title: "Rol Actualizado",
+                description: `El rol de ${result.user.name} ha sido cambiado.`,
+            });
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: result.message });
+        }
+    };
 
     const handleUserUpdated = (updatedUser: User) => {
         setUsers(currentUsers =>
@@ -155,14 +172,15 @@ export default function ConfiguracionPage() {
         }
     };
 
-
-
+    const openChangeRoleDialog = (user: User) => {
+        setSelectedUserForRoleChange(user);
+    };
 
     if (isLoading) {
         return (
              <div className="space-y-8">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold font-headline">Configuración</h1>
+                    <h1 className="text-3xl font-bold font-headline">Configuración</h1>
                     <p className="text-muted-foreground">Ajusta las preferencias de tu cuenta y del sistema.</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -182,7 +200,7 @@ export default function ConfiguracionPage() {
         <>
             <div className="flex flex-col gap-8">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold font-headline">Configuración</h1>
+                    <h1 className="text-3xl font-bold font-headline">Configuración</h1>
                     <p className="text-muted-foreground">Ajusta las preferencias de tu cuenta y del sistema.</p>
                 </div>
 
@@ -210,7 +228,7 @@ export default function ConfiguracionPage() {
                                             <CardDescription>Gestiona tu información personal y de contacto.</CardDescription>
                                         </CardHeader>
                                         <CardContent className="space-y-4">
-                                            <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+                                            <div className="flex items-center gap-6">
                                                 <Avatar className="h-24 w-24">
                                                     <AvatarImage src={avatarUrl} alt={currentUser?.name} />
                                                     <AvatarFallback>{userInitials}</AvatarFallback>
@@ -425,8 +443,7 @@ export default function ConfiguracionPage() {
                                                                     <DropdownMenuItem onSelect={() => setEditingUser(user)}>
                                                                         Editar Usuario
                                                                     </DropdownMenuItem>
-
-
+                                                                    <DropdownMenuItem onSelect={() => openChangeRoleDialog(user)}>Cambiar Rol</DropdownMenuItem>
                                                                     <DropdownMenuItem className="text-destructive" disabled>Suspender</DropdownMenuItem>
                                                                 </DropdownMenuContent>
                                                             </DropdownMenu>
@@ -461,8 +478,12 @@ export default function ConfiguracionPage() {
                 </Tabs>
             </div>
 
-
-
+            <ChangeRoleDialog
+                open={!!selectedUserForRoleChange}
+                onOpenChange={(open) => !open && setSelectedUserForRoleChange(null)}
+                user={selectedUserForRoleChange}
+                onRoleChanged={handleRoleChanged}
+            />
 
             <EditAgentDialog
                 open={!!(editingUser && editingUser.role === 'agent')}

@@ -4,17 +4,17 @@ import type { User } from '@/types';
 import { AgentsList } from "./components/agents-list";
 
 // In a real app, this user would come from context or auth.
-const currentUser: User = { id: 'admin_camilo_toro', name: 'Camilo Toro', cedula: '1091656511', phone: '3156765529'};
+const currentUser: User = { id: 'admin_camilo_toro', name: 'Camilo Toro', role: 'admin', cedula: '1091656511', phone: '3156765529'};
 
 export default async function AgentesPage() {
     // Fetch agents from the database on the server
-    const agents = await getUsers();
+    const agents = await getUsers('agent');
 
     return (
         <div>
             <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold font-headline">Gestión de Agentes</h1>
+                    <h1 className="text-3xl font-bold font-headline">Gestión de Agentes</h1>
                     <p className="text-muted-foreground">Administra los usuarios del call center.</p>
                 </div>
             </div>

@@ -31,7 +31,7 @@ export default async function CuadreCajaPage() {
     return (
         <div className="flex flex-col gap-8">
             <div>
-                <h1 className="text-2xl sm:text-3xl font-bold font-headline">Cuadre de Caja General</h1>
+                <h1 className="text-3xl font-bold font-headline">Cuadre de Caja General</h1>
                 <p className="text-muted-foreground">Consolidado de todas las entregas y recaudos del turno.</p>
             </div>
 

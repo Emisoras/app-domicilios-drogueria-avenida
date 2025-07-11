@@ -7,6 +7,7 @@ import type { User } from '@/types';
 const mockAdminUser: User = { 
   id: 'admin_camilo_toro', 
   name: 'Camilo Toro', 
+  role: 'admin', 
   cedula: '1091656511', 
   phone: '3156765529'
 };
@@ -14,6 +15,7 @@ const mockAdminUser: User = {
 const mockAgentUser: User = { 
   id: 'agent01', 
   name: 'Carlos Rivas', 
+  role: 'agent', 
   cedula: '123456', 
   phone: '3001112233'
 };
@@ -21,6 +23,7 @@ const mockAgentUser: User = {
 const mockDeliveryUser: User = {
   id: 'delivery01',
   name: 'Miguel Torres',
+  role: 'delivery',
   cedula: '789012',
   phone: '3012345678'
 };

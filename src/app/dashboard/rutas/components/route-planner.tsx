@@ -155,7 +155,7 @@ export function RoutePlanner({ initialPendingOrders, initialAssignedRoutes, deli
     <>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold font-headline">Gestión de Rutas</h1>
+          <h1 className="text-3xl font-bold font-headline">Gestión de Rutas</h1>
           <p className="text-muted-foreground">Asigna y optimiza las entregas del día.</p>
         </div>
         <div className="flex gap-2">
@@ -169,7 +169,7 @@ export function RoutePlanner({ initialPendingOrders, initialAssignedRoutes, deli
           </Button>
         </div>
       </div>
-      <div className="flex flex-col lg:grid gap-6 lg:grid-cols-[minmax(0,_1fr)_minmax(0,_2fr)] lg:h-[calc(100vh-14rem)]">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-[minmax(0,_1fr)_minmax(0,_2fr)] h-[calc(100vh-14rem)]">
         <div className="flex flex-col gap-4">
             <Card>
                 <CardHeader>
@@ -197,12 +197,12 @@ export function RoutePlanner({ initialPendingOrders, initialAssignedRoutes, deli
                 </CardContent>
             </Card>
 
-            <Card className="flex flex-col">
+            <Card className="flex-1 flex flex-col">
                 <CardHeader>
                     <CardTitle>Rutas Asignadas</CardTitle>
                     <CardDescription>Pedidos en curso agrupados por domiciliario.</CardDescription>
                 </CardHeader>
-                <ScrollArea className="h-80">
+                <ScrollArea className="flex-1">
                     <CardContent>
                          <Accordion type="multiple" className="w-full">
                             {routesForMap.length > 0 ? routesForMap.map(({ deliveryPerson, orders, color }) => (
@@ -234,7 +234,7 @@ export function RoutePlanner({ initialPendingOrders, initialAssignedRoutes, deli
                 </ScrollArea>
             </Card>
         </div>
-        <Card className="flex flex-col h-96 lg:h-auto">
+        <Card className="flex flex-col">
           <CardHeader>
             <CardTitle>Mapa de Entregas</CardTitle>
           </CardHeader>
