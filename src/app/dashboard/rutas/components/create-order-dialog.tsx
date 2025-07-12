@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import type { Order, User, Location, Client } from "@/types";
-import { Loader2, MapPin, ChevronsUpDown, X } from 'lucide-react';
+import type { Order, User, Location, PaymentMethod } from "@/types";
+import { Loader2, MapPin } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
 import { Button } from "@/components/ui/button";
@@ -19,8 +19,6 @@ import { reverseGeocode } from '@/ai/flows/reverse-geocode-flow';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { createOrder } from '@/actions/order-actions';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 // Dynamically import map component to avoid SSR issues with Leaflet
 const AddressMapPicker = dynamic(() => import('./address-map-picker'), {
@@ -44,21 +42,16 @@ interface CreateOrderDialogProps {
     onOpenChange: (open: boolean) => void;
     onOrderCreated: (order: Order) => void;
     agent: User;
-    clients: Client[];
 }
 
 const ocanaCenter = { lat: 8.250890339840987, lng: -73.35842108942335 }; // Droguería Avenida
 
-export function CreateOrderDialog({ open, onOpenChange, onOrderCreated, agent, clients }: CreateOrderDialogProps) {
+export function CreateOrderDialog({ open, onOpenChange, onOrderCreated, agent }: CreateOrderDialogProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLocating, setIsLocating] = useState(false);
     const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
     const [location, setLocation] = useState<Location | null>(null);
     const { toast } = useToast();
-
-    const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-    const [comboboxOpen, setComboboxOpen] = useState(false);
-    const [searchTerm, setSearchTerm] = useState("");
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -71,14 +64,9 @@ export function CreateOrderDialog({ open, onOpenChange, onOrderCreated, agent, c
             paymentMethod: "cash",
         },
     });
-    
-    const filteredClients = searchTerm === "" ? clients : clients.filter(client => 
-        client.fullName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        client.phone.includes(searchTerm)
-    );
 
-    const handleLocateAddress = async (addressToLocate?: string) => {
-        const address = addressToLocate || form.getValues("clientAddress");
+    const handleLocateAddress = async () => {
+        const address = form.getValues("clientAddress");
         if (!address) {
             form.setError("clientAddress", { type: "manual", message: "Por favor, ingresa una dirección." });
             return;
@@ -103,32 +91,6 @@ export function CreateOrderDialog({ open, onOpenChange, onOrderCreated, agent, c
         } finally {
             setIsLocating(false);
         }
-    };
-
-    const handleSelectClient = (client: Client) => {
-        setSelectedClient(client);
-        form.setValue('clientName', client.fullName, { shouldValidate: true });
-        form.setValue('clientPhone', client.phone, { shouldValidate: true });
-
-        const clientAddress = client.addresses[0]?.address;
-        if (clientAddress) {
-            form.setValue('clientAddress', clientAddress, { shouldValidate: true });
-            handleLocateAddress(clientAddress);
-        } else {
-            form.setValue('clientAddress', '', { shouldValidate: true });
-            setLocation(null);
-        }
-        setComboboxOpen(false);
-        setSearchTerm("");
-    };
-
-    const clearClientSelection = () => {
-        setSelectedClient(null);
-        form.setValue('clientName', '');
-        form.setValue('clientPhone', '');
-        form.setValue('clientAddress', '');
-        setLocation(null);
-        form.clearErrors(['clientName', 'clientPhone', 'clientAddress']);
     };
     
     const handleLocationChange = async (newCoords: { lat: number; lng: number }) => {
@@ -185,6 +147,8 @@ export function CreateOrderDialog({ open, onOpenChange, onOrderCreated, agent, c
 
         if (result.success && result.order) {
             onOrderCreated(result.order);
+            form.reset();
+            setLocation(null);
         } else {
             toast({
                 variant: 'destructive',
@@ -195,12 +159,11 @@ export function CreateOrderDialog({ open, onOpenChange, onOrderCreated, agent, c
         setIsSubmitting(false);
     }
     
+    // Reset location state when dialog is closed
     const handleOpenChange = (isOpen: boolean) => {
       if (!isOpen) {
         setLocation(null);
         form.reset();
-        setSelectedClient(null);
-        setSearchTerm("");
       }
       onOpenChange(isOpen);
     }
@@ -211,7 +174,7 @@ export function CreateOrderDialog({ open, onOpenChange, onOrderCreated, agent, c
                 <DialogHeader>
                     <DialogTitle>Crear Nuevo Pedido</DialogTitle>
                     <DialogDescription>
-                        Selecciona un cliente existente o ingresa los datos para crear uno nuevo.
+                        Ingresa los detalles, ubica la dirección en el mapa y guarda el pedido.
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -219,62 +182,6 @@ export function CreateOrderDialog({ open, onOpenChange, onOrderCreated, agent, c
                         <div className="max-h-[65vh] overflow-y-auto pr-4">
                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
                              <div className="space-y-4">
-                                
-                                <FormItem>
-                                    <FormLabel>Cliente</FormLabel>
-                                    <div className="flex gap-2 items-center">
-                                        <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
-                                            <PopoverTrigger asChild>
-                                                <Button
-                                                    variant="outline"
-                                                    role="combobox"
-                                                    aria-expanded={comboboxOpen}
-                                                    className="w-full justify-between"
-                                                >
-                                                    {selectedClient
-                                                        ? selectedClient.fullName
-                                                        : "Seleccionar cliente existente..."}
-                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                                                <div className="p-2">
-                                                    <Input
-                                                        placeholder="Buscar por nombre o teléfono..."
-                                                        value={searchTerm}
-                                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                                    />
-                                                </div>
-                                                <ScrollArea className="h-[200px]">
-                                                    <div className="p-1">
-                                                        {filteredClients.length > 0 ? (
-                                                            filteredClients.map(client => (
-                                                                <div
-                                                                    key={client.id}
-                                                                    onClick={() => handleSelectClient(client)}
-                                                                    className="p-2 text-sm hover:bg-muted cursor-pointer rounded-md"
-                                                                >
-                                                                    <p className="font-medium">{client.fullName}</p>
-                                                                    <p className="text-xs text-muted-foreground">{client.phone}</p>
-                                                                </div>
-                                                            ))
-                                                        ) : (
-                                                            <p className="p-4 text-sm text-center text-muted-foreground">No se encontraron clientes.</p>
-                                                        )}
-                                                    </div>
-                                                </ScrollArea>
-                                            </PopoverContent>
-                                        </Popover>
-                                        {selectedClient && (
-                                            <Button variant="ghost" size="icon" onClick={clearClientSelection} type="button">
-                                                <X className="h-4 w-4" />
-                                                <span className="sr-only">Limpiar selección</span>
-                                            </Button>
-                                        )}
-                                    </div>
-                                    <p className="text-xs text-muted-foreground pt-1">O ingrese los datos a continuación para crear uno nuevo.</p>
-                                </FormItem>
-                                
                                 <FormField
                                     control={form.control}
                                     name="clientName"
@@ -282,7 +189,7 @@ export function CreateOrderDialog({ open, onOpenChange, onOrderCreated, agent, c
                                         <FormItem>
                                             <FormLabel>Nombre del Cliente</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="Nombre completo" {...field} readOnly={!!selectedClient} />
+                                                <Input placeholder="Nombre completo" {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -295,7 +202,7 @@ export function CreateOrderDialog({ open, onOpenChange, onOrderCreated, agent, c
                                         <FormItem>
                                             <FormLabel>Teléfono</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="3001234567" {...field} readOnly={!!selectedClient} />
+                                                <Input placeholder="3001234567" {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -318,7 +225,7 @@ export function CreateOrderDialog({ open, onOpenChange, onOrderCreated, agent, c
                                                         )}
                                                     </div>
                                                 </FormControl>
-                                                <Button type="button" variant="secondary" onClick={() => handleLocateAddress()} disabled={isLocating || isReverseGeocoding}>
+                                                <Button type="button" variant="secondary" onClick={handleLocateAddress} disabled={isLocating || isReverseGeocoding}>
                                                     {isLocating ? <Loader2 className="animate-spin" /> : <MapPin />}
                                                     <span className="sr-only">Ubicar en mapa</span>
                                                 </Button>
