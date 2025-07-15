@@ -1,13 +1,19 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getUsers } from '@/actions/user-actions';
+import { getUsers, getUserById } from '@/actions/user-actions';
 import type { User } from '@/types';
 import { DeliveryPeopleList } from "./components/delivery-people-list";
-
-// En un futuro, este usuario vendrá de la sesión.
-const currentUser: User = { id: 'admin_camilo_toro', name: 'Camilo Toro', role: 'admin', cedula: '1091656511', phone: '3156765529'};
+import { getSession } from '@/lib/auth';
 
 export default async function DomiciliariosPage() {
-    const deliveryPeople = await getUsers('delivery');
+    const session = await getSession();
+    const [deliveryPeople, currentUser] = await Promise.all([
+        getUsers('delivery'),
+        session ? getUserById(session.userId as string) : null
+    ]);
+
+    if (!currentUser) {
+        return <div>Inicia sesión para ver esta página.</div>;
+    }
 
     return (
         <div>

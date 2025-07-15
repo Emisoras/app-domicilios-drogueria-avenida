@@ -9,7 +9,6 @@ import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/icons/logo';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
-import { loginUser } from '@/actions/user-actions';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,13 +22,25 @@ export default function LoginPage() {
     setError(null);
     setIsLoading(true);
 
-    const result = await loginUser({ cedula, password });
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cedula, password }),
+      });
 
-    if (result.success) {
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Redirect to dashboard on successful login
         router.push('/dashboard');
-    } else {
-        setError(result.message);
-        setIsLoading(false);
+      } else {
+        setError(data.message || 'Error desconocido.');
+      }
+    } catch (err) {
+      setError('No se pudo conectar al servidor. Inténtalo de nuevo.');
+    } finally {
+      setIsLoading(false);
     }
   };
 

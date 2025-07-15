@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import type { Order, User, Location, PaymentMethod } from "@/types";
+import type { Order, User, Location, PaymentMethod, Client } from "@/types";
 import { Loader2, MapPin } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
@@ -19,6 +19,7 @@ import { reverseGeocode } from '@/ai/flows/reverse-geocode-flow';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { createOrder } from '@/actions/order-actions';
+import { Combobox } from '@/components/ui/combobox';
 
 // Dynamically import map component to avoid SSR issues with Leaflet
 const AddressMapPicker = dynamic(() => import('./address-map-picker'), {
@@ -42,11 +43,11 @@ interface CreateOrderDialogProps {
     onOpenChange: (open: boolean) => void;
     onOrderCreated: (order: Order) => void;
     agent: User;
+    clients: Client[];
+    pharmacyLocation: { lat: number, lng: number };
 }
 
-const ocanaCenter = { lat: 8.250890339840987, lng: -73.35842108942335 }; // Droguería Avenida
-
-export function CreateOrderDialog({ open, onOpenChange, onOrderCreated, agent }: CreateOrderDialogProps) {
+export function CreateOrderDialog({ open, onOpenChange, onOrderCreated, agent, clients, pharmacyLocation }: CreateOrderDialogProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLocating, setIsLocating] = useState(false);
     const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
@@ -64,6 +65,22 @@ export function CreateOrderDialog({ open, onOpenChange, onOrderCreated, agent }:
             paymentMethod: "cash",
         },
     });
+
+    const handleSelectClient = (clientId: string) => {
+        const client = clients.find(c => c.id === clientId);
+        if (client) {
+            form.setValue('clientName', client.fullName);
+            form.setValue('clientPhone', client.phone);
+            // If the client has addresses, use the first one by default
+            if (client.addresses && client.addresses.length > 0) {
+                const firstAddress = client.addresses[0];
+                form.setValue('clientAddress', firstAddress.address);
+                if(firstAddress.lat && firstAddress.lng) {
+                    setLocation(firstAddress);
+                }
+            }
+        }
+    };
 
     const handleLocateAddress = async () => {
         const address = form.getValues("clientAddress");
@@ -138,7 +155,7 @@ export function CreateOrderDialog({ open, onOpenChange, onOrderCreated, agent }:
         const result = await createOrder({
             clientName: values.clientName,
             clientPhone: values.clientPhone,
-            deliveryLocation: location,
+            deliveryLocation: { ...location, address: values.clientAddress }, // Use address from form
             items: items,
             total: values.total,
             paymentMethod: values.paymentMethod,
@@ -168,13 +185,18 @@ export function CreateOrderDialog({ open, onOpenChange, onOrderCreated, agent }:
       onOpenChange(isOpen);
     }
 
+    const clientOptions = clients.map(client => ({
+        value: client.id,
+        label: `${client.fullName} - ${client.phone}`
+    }));
+
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="sm:max-w-4xl">
                 <DialogHeader>
                     <DialogTitle>Crear Nuevo Pedido</DialogTitle>
                     <DialogDescription>
-                        Ingresa los detalles, ubica la dirección en el mapa y guarda el pedido.
+                        Busca un cliente o crea uno nuevo, ubica la dirección y guarda el pedido.
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -182,6 +204,17 @@ export function CreateOrderDialog({ open, onOpenChange, onOrderCreated, agent }:
                         <div className="max-h-[65vh] overflow-y-auto pr-4">
                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
                              <div className="space-y-4">
+                                <FormItem>
+                                    <FormLabel>Buscar Cliente Existente</FormLabel>
+                                    <Combobox 
+                                        options={clientOptions}
+                                        onSelect={handleSelectClient}
+                                        selectText="Seleccionar cliente..."
+                                        searchText="Buscar cliente..."
+                                        notFoundText="No se encontró ningún cliente."
+                                    />
+                                </FormItem>
+
                                 <FormField
                                     control={form.control}
                                     name="clientName"
@@ -297,7 +330,7 @@ export function CreateOrderDialog({ open, onOpenChange, onOrderCreated, agent }:
                              </div>
                              <div className="h-96 md:min-h-[500px] rounded-lg overflow-hidden border">
                                 <AddressMapPicker 
-                                    center={location || ocanaCenter} 
+                                    center={location || pharmacyLocation} 
                                     onLocationChange={handleLocationChange} 
                                 />
                              </div>

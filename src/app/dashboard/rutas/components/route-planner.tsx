@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Bot, PlusCircle, Loader2, User as UserIcon } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import type { Order, User } from '@/types';
+import type { Order, User, Client } from '@/types';
 import { OrderCard } from './order-card';
 import { CreateOrderDialog } from './create-order-dialog';
 import { AssignDeliveryDialog } from './assign-delivery-dialog';
@@ -15,21 +15,16 @@ import { useToast } from "@/hooks/use-toast";
 import { optimizePharmacyRoute } from '@/ai/flows/optimize-pharmacy-route';
 import { Skeleton } from '@/components/ui/skeleton';
 import { sendWhatsAppNotification } from '@/lib/whatsapp';
-import type { RouteInfo } from './map-component';
+import type { RouteInfo } from '@/components/dashboard/map-component';
 import { OrderDetailsDialog } from '../../pedidos/components/order-details-dialog';
 import { updateOrderStatus } from '@/actions/order-actions';
 
 
-const Map = dynamic(() => import('./map-component'), {
+const Map = dynamic(() => import('@/components/dashboard/map-component'), {
   ssr: false,
   loading: () => <Skeleton className="w-full h-full rounded-lg" />
 });
 
-const pharmacyAddress = {
-  address: 'Droguería Avenida, Ocaña, Norte de Santander',
-  lat: 8.250890339840987,
-  lng: -73.35842108942335,
-};
 
 const ROUTE_COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-4))', 'hsl(var(--destructive))', 'hsl(var(--accent))'];
 
@@ -38,10 +33,13 @@ interface RoutePlannerProps {
   initialPendingOrders: Order[];
   initialAssignedRoutes: Record<string, Order[]>;
   deliveryPeople: User[];
+  clients: Client[];
   agent: User;
+  pharmacyAddress: { address: string; lat: number; lng: number };
+  pharmacyLocation: { lat: number, lng: number };
 }
 
-export function RoutePlanner({ initialPendingOrders, initialAssignedRoutes, deliveryPeople, agent }: RoutePlannerProps) {
+export function RoutePlanner({ initialPendingOrders, initialAssignedRoutes, deliveryPeople, clients, agent, pharmacyAddress, pharmacyLocation }: RoutePlannerProps) {
   const [pendingOrders, setPendingOrders] = useState<Order[]>(initialPendingOrders);
   const [assignedRoutes, setAssignedRoutes] = useState<Record<string, Order[]>>(initialAssignedRoutes);
   const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
@@ -49,6 +47,7 @@ export function RoutePlanner({ initialPendingOrders, initialAssignedRoutes, deli
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [viewingOrderDetails, setViewingOrderDetails] = useState<Order | null>(null);
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [optimizedPolyline, setOptimizedPolyline] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Effect to sync state with server-side props when they change (due to revalidation)
@@ -92,6 +91,8 @@ export function RoutePlanner({ initialPendingOrders, initialAssignedRoutes, deli
                 description: `Se asignó a ${deliveryPerson.name} y se abrió WhatsApp para notificar que el pedido #${orderId.slice(-6)} está en ruta.`,
             });
         }
+        // After assigning an order that was part of an optimized route, clear the polyline
+        setOptimizedPolyline(null);
     } else {
         toast({ variant: 'destructive', title: 'Error al asignar', description: result.message });
     }
@@ -107,6 +108,7 @@ export function RoutePlanner({ initialPendingOrders, initialAssignedRoutes, deli
       return;
     }
     setIsOptimizing(true);
+    setOptimizedPolyline(null); // Clear previous polyline
     try {
       const input = {
         startAddress: pharmacyAddress.address,
@@ -123,6 +125,7 @@ export function RoutePlanner({ initialPendingOrders, initialAssignedRoutes, deli
       }).filter((o): o is Order => !!o);
 
       setPendingOrders(reorderedOrders);
+      setOptimizedPolyline(result.encodedPolyline);
       
       toast({
         title: "Ruta Optimizada",
@@ -247,7 +250,7 @@ export function RoutePlanner({ initialPendingOrders, initialAssignedRoutes, deli
                   </div>
               </div>
             )}
-            <Map pharmacyLocation={pharmacyAddress} routes={routesForMap} pendingOrders={pendingOrders} />
+            <Map pharmacyLocation={pharmacyAddress} routes={routesForMap} pendingOrders={pendingOrders} optimizedPolyline={optimizedPolyline}/>
           </CardContent>
         </Card>
       </div>
@@ -256,6 +259,8 @@ export function RoutePlanner({ initialPendingOrders, initialAssignedRoutes, deli
         onOpenChange={setCreateDialogOpen}
         onOrderCreated={handleOrderCreated}
         agent={agent}
+        clients={clients}
+        pharmacyLocation={pharmacyLocation}
       />
       <AssignDeliveryDialog 
         open={isAssignDialogOpen}

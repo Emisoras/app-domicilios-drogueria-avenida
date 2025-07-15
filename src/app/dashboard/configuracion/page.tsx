@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -21,7 +22,7 @@ import { ChangeRoleDialog } from "./components/change-role-dialog";
 import { EditAgentDialog } from '../agentes/components/edit-agent-dialog';
 import { EditDeliveryPersonDialog } from '../domiciliarios/components/edit-delivery-person-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { getAllUsers, getUserByCedula, updateUser } from '@/actions/user-actions';
+import { getAllUsers, updateUser, getUserById } from '@/actions/user-actions';
 import { getPharmacySettings, updatePharmacySettings } from '@/actions/pharmacy-settings-actions';
 import type { PharmacySettings } from '@/models/pharmacy-settings-model';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -73,14 +74,20 @@ export default function ConfiguracionPage() {
         async function loadInitialData() {
             try {
                 setIsLoading(true);
-                const [allUsers, adminUser, settings] = await Promise.all([
+                const sessionRes = await fetch('/api/session');
+                if (!sessionRes.ok) throw new Error("No session");
+                const session = await sessionRes.json();
+                
+                const [allUsers, loggedInUser, settings] = await Promise.all([
                     getAllUsers(),
-                    getUserByCedula('1091656511'),
+                    getUserById(session.userId),
                     getPharmacySettings()
                 ]);
+
                 setUsers(allUsers);
-                setCurrentUser(adminUser);
+                setCurrentUser(loggedInUser);
                 setPharmacySettings(settings);
+
             } catch (error) {
                 console.error("Failed to load configuration data:", error);
                 toast({ variant: 'destructive', title: 'Error', description: 'No se pudo cargar la configuración.' });
@@ -88,6 +95,7 @@ export default function ConfiguracionPage() {
                 setIsLoading(false);
             }
         }
+        
         loadInitialData();
     }, [toast]);
 
@@ -500,4 +508,5 @@ export default function ConfiguracionPage() {
             />
         </>
     );
-}
+
+    

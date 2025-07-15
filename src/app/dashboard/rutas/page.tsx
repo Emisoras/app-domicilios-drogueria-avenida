@@ -1,9 +1,12 @@
 import { getOrders } from "@/actions/order-actions";
-import { getUsers, getUserByCedula } from "@/actions/user-actions";
+import { getUsers, getUserById } from "@/actions/user-actions";
 import { RoutePlanner } from "./components/route-planner";
-import type { Order, User } from "@/types";
+import type { Order } from "@/types";
+import { getClients } from "@/actions/client-actions";
+import { getPharmacySettings } from "@/actions/pharmacy-settings-actions";
+import { geocodeAddress } from "@/ai/flows/geocode-address-flow";
+import { getSession } from "@/lib/auth";
 
-// Helper function to group orders by delivery person on the server
 const groupOrdersByDeliveryPerson = (orders: Order[]): Record<string, Order[]> => {
     const assignedOrders = orders.filter(o => (o.status === 'in_transit' || o.status === 'assigned') && o.assignedTo);
 
@@ -13,23 +16,38 @@ const groupOrdersByDeliveryPerson = (orders: Order[]): Record<string, Order[]> =
             acc[personId] = [];
         }
         acc[personId].push(order);
-        // Sort orders for each person by creation date to have a consistent route order
-        acc[personId].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        // The sorting will happen inside the route planner after optimization
         return acc;
     }, {});
 };
 
 export default async function RutasPage() {
-  // Fetch initial data on the server
-  const allOrders = await getOrders();
-  const deliveryPeople = await getUsers('delivery');
+  const session = await getSession();
+  const [allOrders, deliveryPeople, clients, pharmacySettings, agentUser] = await Promise.all([
+    getOrders(),
+    getUsers('delivery'),
+    getClients(),
+    getPharmacySettings(),
+    session ? getUserById(session.userId as string) : null
+  ]);
   
-  // Try to get a real agent user, otherwise fallback to a mock one.
-  // In a real app, the logged-in user would come from an auth session.
-  const agentUser = await getUserByCedula('123456') || { id: 'agent01', name: 'Carlos Rivas', role: 'agent', cedula: '123456', phone: '3001112233'};
+  if (!agentUser) {
+    return <div>Inicia sesión para ver esta página.</div>;
+  }
 
+  let pharmacyLocation = {
+    address: pharmacySettings.address,
+    lat: 4.60971, // Default to Bogotá if geocoding fails
+    lng: -74.08175,
+  };
 
-  // Filter and group orders on the server
+  try {
+    const coords = await geocodeAddress({ address: pharmacySettings.address });
+    pharmacyLocation = { ...pharmacyLocation, ...coords };
+  } catch (error) {
+    console.warn("Could not geocode pharmacy address, using default location. Error:", error);
+  }
+
   const pendingOrders = allOrders
     .filter(o => o.status === 'pending')
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
@@ -41,7 +59,10 @@ export default async function RutasPage() {
       initialPendingOrders={pendingOrders}
       initialAssignedRoutes={assignedRoutes}
       deliveryPeople={deliveryPeople}
+      clients={clients}
       agent={agentUser}
+      pharmacyAddress={{ address: pharmacySettings.address, lat: pharmacyLocation.lat, lng: pharmacyLocation.lng }}
+      pharmacyLocation={pharmacyLocation}
     />
   );
 }

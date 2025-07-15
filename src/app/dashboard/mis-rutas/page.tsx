@@ -1,24 +1,23 @@
 import { getOrdersByDeliveryPerson } from "@/actions/order-actions";
-import { getUserByCedula } from "@/actions/user-actions";
+import { getUserById } from "@/actions/user-actions";
 import { AssignedRoutesList } from "./components/assigned-routes-list";
 import { Card, CardContent } from "@/components/ui/card";
+import { getSession } from "@/lib/auth";
 
 export default async function MisRutasPage() {
-    // In a real app, this would come from the auth session.
-    // We'll use the hardcoded delivery person for this demo.
-    const deliveryUser = await getUserByCedula('789012');
+    const session = await getSession();
 
-    if (!deliveryUser) {
+    if (!session?.userId) {
         return (
              <Card>
                 <CardContent className="p-8 text-center text-muted-foreground">
-                    <p>No se pudo encontrar el usuario del domiciliario.</p>
+                    <p>Inicia sesión para ver tus rutas.</p>
                 </CardContent>
             </Card>
         );
     }
     
-    const orders = await getOrdersByDeliveryPerson(deliveryUser.id);
+    const orders = await getOrdersByDeliveryPerson(session.userId as string);
 
     return (
         <div>

@@ -34,6 +34,7 @@ const OptimizeRouteOutputSchema = z.object({
   optimizedRoute: z.array(OptimizedRouteStopSchema).describe('An ordered list of stops representing the most efficient route.'),
   estimatedTime: z.string().describe('Estimated total travel time for the route, in a human-readable format (e.g., "45 minutes").'),
   estimatedDistance: z.string().describe('Estimated total travel distance for the route, in a human-readable format (e.g., "15 km").'),
+  encodedPolyline: z.string().describe('The encoded polyline string for the entire optimized route path.'),
 });
 export type OptimizeRouteOutput = z.infer<typeof OptimizeRouteOutputSchema>;
 
@@ -45,6 +46,7 @@ export async function optimizePharmacyRoute(input: OptimizeRouteInput): Promise<
           optimizedRoute: [],
           estimatedTime: "0 minutes",
           estimatedDistance: "0 km",
+          encodedPolyline: "",
       };
   }
 
@@ -53,11 +55,16 @@ export async function optimizePharmacyRoute(input: OptimizeRouteInput): Promise<
   }
 
   try {
+    const waypoints = input.orders.map(order => order.address);
+    // The destination is the last waypoint in the unoptimized list.
+    // The optimizer will determine the actual last stop.
+    const destination = waypoints[waypoints.length - 1];
+    
     const response: DirectionsResponse = await googleMapsClient.directions({
         params: {
             origin: input.startAddress,
-            destination: input.startAddress, // A round trip
-            waypoints: input.orders.map(order => order.address),
+            destination: destination, 
+            waypoints: waypoints,
             optimize: true, // This is the key for TSP optimization
             mode: TravelMode.driving,
             key: process.env.GOOGLE_MAPS_API_KEY,
@@ -81,11 +88,13 @@ export async function optimizePharmacyRoute(input: OptimizeRouteInput): Promise<
 
         const estimatedDistance = `${(totalDistanceMeters / 1000).toFixed(1)} km`;
         const estimatedTime = `${Math.round(totalDurationSeconds / 60)} minutes`;
+        const encodedPolyline = route.overview_polyline.points;
         
         return {
             optimizedRoute,
             estimatedDistance,
             estimatedTime,
+            encodedPolyline,
         };
     } else {
         console.error('Directions API failed:', response.data.status, response.data.error_message);

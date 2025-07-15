@@ -6,10 +6,11 @@ import ClientModel from '@/models/client-model';
 import type { Client } from '@/models/client-model';
 import type { User } from '@/models/user-model';
 import { revalidatePath } from 'next/cache';
-import type { OrderStatus } from '@/types';
+import type { OrderStatus, Role } from '@/types';
 import { z } from 'zod';
 import { subDays, startOfDay, endOfDay, format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import mongoose from 'mongoose';
 
 // Helper to convert Mongoose doc to plain object, including nested ones
 function toPlainObject(doc: any): any {
@@ -197,10 +198,10 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus, as
     try {
         await connectDB();
         
-        const updatePayload: { status: OrderStatus; assignedTo?: string | null } = { status };
+        const updatePayload: { status: OrderStatus; assignedTo?: string | null | mongoose.Types.ObjectId } = { status };
         
         if (assignedToId) {
-            updatePayload.assignedTo = assignedToId;
+            updatePayload.assignedTo = new mongoose.Types.ObjectId(assignedToId);
         } else if (status === 'pending') {
             // If we're setting it back to pending, unassign the delivery person
             updatePayload.assignedTo = null;
@@ -226,7 +227,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus, as
     }
 }
 
-export async function getDashboardStats() {
+export async function getDashboardStats(user?: User) {
     try {
         await connectDB();
 
@@ -234,40 +235,32 @@ export async function getDashboardStats() {
         const todayEnd = endOfDay(new Date());
         const sevenDaysAgo = startOfDay(subDays(new Date(), 6));
 
-        const dailyOrdersCount = await OrderModel.countDocuments({
-            createdAt: { $gte: todayStart, $lte: todayEnd }
-        });
+        // Base query filters
+        const dailyMatch = { createdAt: { $gte: todayStart, $lte: todayEnd } };
+        const deliveredDailyMatch = { status: 'delivered', createdAt: { $gte: todayStart, $lte: todayEnd } };
+        const weeklyDeliveredMatch = { status: 'delivered', createdAt: { $gte: sevenDaysAgo } };
+        const pendingMatch = { status: { $in: ['in_transit', 'assigned'] } };
+        
+        // If a delivery person is provided, scope all queries to them
+        const userFilter = user?.role === 'delivery' ? { assignedTo: new mongoose.Types.ObjectId(user.id) } : {};
 
-        const pendingDeliveriesCount = await OrderModel.countDocuments({
-            status: { $in: ['in_transit', 'assigned'] }
-        });
+        const dailyOrdersCount = await OrderModel.countDocuments({ ...dailyMatch, ...userFilter });
+        const pendingDeliveriesCount = await OrderModel.countDocuments({ ...pendingMatch, ...userFilter });
 
         const dailyRevenueResult = await OrderModel.aggregate([
-            {
-                $match: {
-                    status: 'delivered',
-                    createdAt: { $gte: todayStart, $lte: todayEnd }
-                }
-            },
-            {
-                $group: {
-                    _id: null,
-                    total: { $sum: '$total' }
-                }
-            }
+            { $match: { ...deliveredDailyMatch, ...userFilter } },
+            { $group: { _id: null, total: { $sum: '$total' } } }
         ]);
         const dailyRevenue = dailyRevenueResult.length > 0 ? dailyRevenueResult[0].total : 0;
-
-        const allOrders = await getOrders();
-        const recentOrders = allOrders.slice(0, 5);
         
+        const recentOrdersForUser = await OrderModel.find(userFilter)
+            .sort({ createdAt: -1 })
+            .limit(5)
+            .populate<{client: Client}>('client');
+        const recentOrders = recentOrdersForUser.map(toPlainObject);
+
         const weeklyRevenueResult = await OrderModel.aggregate([
-            {
-                $match: {
-                    status: 'delivered',
-                    createdAt: { $gte: sevenDaysAgo }
-                }
-            },
+            { $match: { ...weeklyDeliveredMatch, ...userFilter } },
             {
                 $group: {
                     _id: {
@@ -278,9 +271,7 @@ export async function getDashboardStats() {
                     revenue: { $sum: '$total' }
                 }
             },
-            {
-                $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 }
-            }
+            { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 } }
         ]);
 
         const weeklyRevenueData = [];
@@ -321,5 +312,34 @@ export async function getDashboardStats() {
                 revenue: 0
             }))
         };
+    }
+}
+
+export async function getCashReconciliationData(date: Date, user?: User) {
+    try {
+        await connectDB();
+        const dateStart = startOfDay(date);
+        const dateEnd = endOfDay(date);
+
+        const baseFilter = {
+            status: 'delivered',
+            createdAt: { $gte: dateStart, $lte: dateEnd }
+        };
+
+        const userFilter = user?.role === 'delivery'
+            ? { assignedTo: new mongoose.Types.ObjectId(user.id) }
+            : {};
+        
+        const filter = { ...baseFilter, ...userFilter };
+        
+        const orders = await OrderModel.find(filter)
+            .populate<{client: Client}>('client')
+            .populate<{assignedTo: User}>('assignedTo')
+            .sort({ createdAt: -1 });
+
+        return orders.map(toPlainObject);
+    } catch (error) {
+        console.error('Error fetching cash reconciliation data:', error);
+        return [];
     }
 }

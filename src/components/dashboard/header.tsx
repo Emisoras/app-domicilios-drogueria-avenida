@@ -1,6 +1,7 @@
 'use client'
 
 import Link from "next/link"
+import { useRouter } from 'next/navigation';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -23,8 +24,14 @@ const navLinks: { href: string; icon: React.ElementType; label: string; roles: R
 ];
 
 export function Header({ user }: { user: User }) {
+    const router = useRouter();
     const accessibleNavLinks = navLinks.filter(link => link.roles.includes(user.role));
     const userInitials = user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    
+    const handleLogout = async () => {
+        await fetch('/api/logout', { method: 'POST' });
+        router.push('/');
+    };
 
     return (
         <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
@@ -71,9 +78,7 @@ export function Header({ user }: { user: User }) {
               </DropdownMenuItem>
               <DropdownMenuItem>Soporte</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/">Cerrar Sesión</Link>
-              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={handleLogout}>Cerrar Sesión</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>

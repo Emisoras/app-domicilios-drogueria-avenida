@@ -26,7 +26,8 @@ const UserUpdateSchema = z.object({
 });
 
 
-function toPlainObject(doc: UserDocument): any {
+function toPlainObject(doc: UserDocument | null): any {
+    if (!doc) return null;
     const plain = doc.toObject({ getters: true, versionKey: false });
     plain.id = plain._id.toString();
     delete plain._id;
@@ -109,10 +110,20 @@ export async function getUserByCedula(cedula: string) {
     try {
         await connectDB();
         const user = await UserModel.findOne({ cedula });
-        if (!user) return null;
         return toPlainObject(user);
     } catch (error) {
         console.error(`Error fetching user with cedula ${cedula}:`, error);
+        throw new Error('Failed to fetch user.');
+    }
+}
+
+export async function getUserById(id: string) {
+    try {
+        await connectDB();
+        const user = await UserModel.findById(id);
+        return toPlainObject(user);
+    } catch (error) {
+        console.error(`Error fetching user with id ${id}:`, error);
         throw new Error('Failed to fetch user.');
     }
 }

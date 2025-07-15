@@ -2,13 +2,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getUsers } from '@/actions/user-actions';
 import type { User } from '@/types';
 import { AgentsList } from "./components/agents-list";
-
-// In a real app, this user would come from context or auth.
-const currentUser: User = { id: 'admin_camilo_toro', name: 'Camilo Toro', role: 'admin', cedula: '1091656511', phone: '3156765529'};
+import { getSession } from "@/lib/auth";
+import { getUserById } from "@/actions/user-actions";
 
 export default async function AgentesPage() {
-    // Fetch agents from the database on the server
-    const agents = await getUsers('agent');
+    const session = await getSession();
+    const [agents, currentUser] = await Promise.all([
+        getUsers('agent'),
+        session ? getUserById(session.userId as string) : null
+    ]);
+
+    if (!currentUser) {
+        return <div>Inicia sesión para ver esta página.</div>;
+    }
 
     return (
         <div>
